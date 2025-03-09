@@ -86,6 +86,7 @@ class MyApp extends StatelessWidget {
             child: SubrosaContent(
                 connected: true,
                 newsgroupService: newsgroupService,
+                repository: repository,
                 scanner: searchState,
                 prefs: prefs)));
   }

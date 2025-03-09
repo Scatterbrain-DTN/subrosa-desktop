@@ -33,13 +33,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: Provider(
-            create: (ctx) => repository,
-            child: SubrosaContent(
-              prefs: prefs,
-              newsgroupService: newsGroupService,
-              scanner: searchState,
-              connected: false,
-            )));
+        home: SubrosaContent(
+          prefs: prefs,
+          newsgroupService: newsGroupService,
+          repository: repository,
+          scanner: searchState,
+          connected: false,
+        ));
   }
 }

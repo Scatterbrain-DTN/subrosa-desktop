@@ -4,7 +4,6 @@ import 'package:scatterbrain_flutter/pairing/error_dialog.dart';
 import 'package:scatterbrain_flutter/pairing/pairing_dialog.dart';
 import 'package:scatterbrain_flutter/pairing/search.dart';
 import 'package:scatterbrain_flutter/pairing/search_state.dart';
-import 'package:scatterbrain_flutter/scatterbrain/repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:subrosa/connection_repository.dart';
 import 'package:subrosa/groups/newsgroup_service.dart';
@@ -17,23 +16,23 @@ class _SubrosaContentState extends State<SubrosaContent> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await widget.scanner.startScan();
-    });
+    widget.scanner.startScan();
   }
 
   @override
   Widget build(BuildContext context) {
     if (widget.connected) {
-      return SubrosaScaffold(
-          preferences: widget.prefs,
-          newsgroupService: widget.newsgroupService,
-          scanner: widget.scanner);
+      return Provider(
+          create: (ctx) => widget.repository,
+          child: SubrosaScaffold(
+              preferences: widget.prefs,
+              newsgroupService: widget.newsgroupService,
+              scanner: widget.scanner));
     } else {
       return SearchList(
         appName: "desktop test",
         scanner: widget.scanner,
-        onConnect: (session, accept) {
+        onConnect: (session, accept, err) {
           if (session != null) {
             showDialog(
                 context: context,
@@ -43,23 +42,30 @@ class _SubrosaContentState extends State<SubrosaContent> {
                     prefs: widget.prefs,
                     onPair: (b) => accept(b)));
           } else {
-            showDialog(context: context, builder: (_) => ErrorDialog());
+            showDialog(
+                context: context,
+                builder: (_) => ErrorDialog(
+                      errorText: err.toString(),
+                    ));
           }
           return null;
         },
         prefs: widget.prefs,
-        onPair: (repository, session, onDisconnect) {
-          return Consumer<SubrosaRepository>(
-              builder: (ctx, subrosaRepo, child) => Provider(
-                  create: (ctx) => ConnectionRepository(
-                      scatterbrainRepository: repository,
-                      onDisconnect: onDisconnect,
-                      subrosaRepository: subrosaRepo),
-                  child: SubrosaScaffold(
-                    newsgroupService: widget.newsgroupService,
-                    preferences: widget.prefs,
-                    scanner: widget.scanner,
-                  )));
+        onPair: (repository, session, onDisconnect, err) {
+          return MultiProvider(
+              providers: [
+                Provider(create: (ctx) => widget.repository),
+                Provider(
+                    create: (ctx) => ConnectionRepository(
+                        scatterbrainRepository: repository,
+                        onDisconnect: onDisconnect,
+                        subrosaRepository: widget.repository))
+              ],
+              child: SubrosaScaffold(
+                newsgroupService: widget.newsgroupService,
+                preferences: widget.prefs,
+                scanner: widget.scanner,
+              ));
         },
       );
     }
@@ -69,6 +75,7 @@ class _SubrosaContentState extends State<SubrosaContent> {
 class SubrosaContent extends StatefulWidget {
   final SharedPreferencesAsync prefs;
   final NewsgroupService newsgroupService;
+  final SubrosaRepository repository;
   final SearchState scanner;
   final bool connected;
 
@@ -77,6 +84,7 @@ class SubrosaContent extends StatefulWidget {
       this.connected = false,
       required this.prefs,
       required this.newsgroupService,
+      required this.repository,
       required this.scanner});
 
   @override
