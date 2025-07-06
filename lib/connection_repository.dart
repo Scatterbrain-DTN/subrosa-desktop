@@ -30,7 +30,6 @@ class ConnectionRepository {
       await _scatterbrainRepository.currentSession
           .sendPost(post: post, db: subrosaRepository.db);
     } on Exception catch (e) {
-      print("got exception $e");
       await onDisconnect();
     }
   }
